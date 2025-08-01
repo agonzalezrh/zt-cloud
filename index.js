@@ -16,9 +16,9 @@ const AWS_DEFAULT_REGION = process.env.AWS_DEFAULT_REGION || 'Not set';
 
 
 
-const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID || 'Not set';
+const AZURE_TENANT_ID = process.env.AZURE_TENANT || 'Not set';
 const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID || 'Not set';
-const AZURE_SECRET = process.env.AZURE_SECRET || 'Not set';
+const AZURE_PASSWORD = process.env.AZURE_PASSWORD || 'Not set';
 const AZURE_SUBSCRIPTION = process.env.AZURE_SUBSCRIPTION || 'No set';
 const AZURE_RESOURCEGROUP = process.env.AZURE_RESOURCEGROUP || 'No set';
 const AZURE_PASSWORD = process.env.AZURE_PASSWORD || 'Not set';
