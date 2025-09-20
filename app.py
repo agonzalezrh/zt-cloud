@@ -179,7 +179,7 @@ def get_azure_diagram_html():
             refreshBtn.innerHTML = '⏳ Loading...';
             
             // Fetch Azure resources
-            fetch('/api/azure-resources')
+            fetch('api/azure-resources')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -272,7 +272,7 @@ def generate_tabbed_html():
             <div id="aws" class="tab-content active">
                 <div class="provider-info">
                     <h2>AWS Information</h2>
-                    <img src="/aws-logo.svg" alt="AWS Logo" width="150"><br>
+                    <img src="aws-logo.svg" alt="AWS Logo" width="150"><br>
                     <p><strong>AWS_ACCESS_KEY_ID:</strong> {AWS_ACCESS_KEY_ID}</p>
                     <p><strong>AWS_SECRET_ACCESS_KEY:</strong> {AWS_SECRET_ACCESS_KEY}</p>
                     <p><strong>AWS_ROUTE53_DOMAIN:</strong> {AWS_ROUTE53_DOMAIN}</p>
@@ -287,7 +287,7 @@ def generate_tabbed_html():
             <div id="azure" class="tab-content">
                 <div class="provider-info">
                     <h2>Azure Resource Topology</h2>
-                    <img src="/azure-logo.svg" alt="Azure Logo" width="150"><br>
+                    <img src="azure-logo.svg" alt="Azure Logo" width="150"><br>
                     
                     <!-- Collapsible Credentials Section -->
                     <div style="margin: 20px 0;">
@@ -389,7 +389,7 @@ def generate_single_provider_html():
     if CLOUD_PROVIDER == 'aws':
         html += f"""
         <h2>AWS Information</h2>
-        <img src="/aws-logo.svg" alt="AWS Logo" width="150"><br>
+        <img src="aws-logo.svg" alt="AWS Logo" width="150"><br>
         <p><strong>AWS_ACCESS_KEY_ID:</strong> {AWS_ACCESS_KEY_ID}</p>
         <p><strong>AWS_SECRET_ACCESS_KEY:</strong> {AWS_SECRET_ACCESS_KEY}</p>
         <p><strong>AWS_ROUTE53_DOMAIN:</strong> {AWS_ROUTE53_DOMAIN}</p>
@@ -402,7 +402,7 @@ def generate_single_provider_html():
     elif CLOUD_PROVIDER == 'azure':
         html += f"""
         <h2>Azure Resource Topology</h2>
-        <img src="/azure-logo.svg" alt="Azure Logo" width="150"><br>
+        <img src="azure-logo.svg" alt="Azure Logo" width="150"><br>
         
         <!-- Collapsible Credentials Section -->
         <div style="margin: 20px 0;">
