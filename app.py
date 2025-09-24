@@ -55,10 +55,9 @@ def perform_azure_login():
         return False
 
 def generate_azure_diagram():
-    """Generate Azure resource information (text-based due to Graphviz issues)"""
+    """Generate Azure resource information with simple diagram"""
     try:
-        # Since Graphviz is crashing, let's create a simple text-based representation
-        # using Azure CLI to list resources
+        # Get Azure resources using Azure CLI
         result = subprocess.run([
             'az', 'resource', 'list', 
             '--output', 'table',
@@ -66,9 +65,11 @@ def generate_azure_diagram():
         ], capture_output=True, text=True, timeout=30)
         
         if result.returncode == 0:
-            # Create a simple HTML table representation
+            # Parse resources and create both table and diagram
             resources_text = result.stdout
-            return create_azure_resources_html(resources_text)
+            table_html = create_azure_resources_html(resources_text)
+            diagram_html = create_azure_diagram_svg(resources_text)
+            return f"{diagram_html}{table_html}"
         else:
             print(f"Azure CLI resource list failed: {result.stderr}", file=sys.stderr)
             return create_azure_fallback_html()
@@ -79,6 +80,157 @@ def generate_azure_diagram():
     except Exception as e:
         print(f"Error generating Azure resource info: {e}", file=sys.stderr)
         return create_azure_fallback_html()
+
+def create_azure_diagram_svg(resources_text):
+    """Create a responsive SVG diagram of Azure resources"""
+    lines = resources_text.strip().split('\n')
+    if len(lines) < 3:
+        return ""
+    
+    # Parse resources
+    resource_lines = lines[2:]  # Skip header and separator
+    resources = []
+    
+    for line in resource_lines:
+        if line.strip():
+            cells = [cell.strip() for cell in line.split('  ') if cell.strip()]
+            if len(cells) >= 4:  # Name, Type, ResourceGroup, Location
+                resources.append({
+                    'name': cells[0],
+                    'type': cells[1],
+                    'resourceGroup': cells[2],
+                    'location': cells[3]
+                })
+    
+    if not resources:
+        return ""
+    
+    # Group resources by resource group
+    resource_groups = {}
+    for resource in resources:
+        rg = resource['resourceGroup']
+        if rg not in resource_groups:
+            resource_groups[rg] = []
+        resource_groups[rg].append(resource)
+    
+    # Create responsive SVG with JavaScript
+    svg_id = f"azure-diagram-{hash(str(resources)) % 10000}"
+    
+    svg_html = f'''
+    <div style="margin: 20px 0; text-align: center;">
+        <div id="{svg_id}-container" style="width: 100%; height: 500px; border: 1px solid #ddd; background: #fafafa; overflow: auto;">
+            <svg id="{svg_id}" width="100%" height="100%" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#1976d2" />
+                    </marker>
+                </defs>
+                <text x="500" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Azure Resources Overview</text>
+    '''
+    
+    # Calculate layout
+    num_rgs = len(resource_groups)
+    if num_rgs == 0:
+        return ""
+    
+    # Draw resource groups
+    x_spacing = 800 // num_rgs if num_rgs > 0 else 400
+    y_start = 60
+    
+    for i, (rg_name, rg_resources) in enumerate(resource_groups.items()):
+        x = 100 + i * x_spacing
+        
+        # Resource group container (doubled width)
+        container_height = max(120, len(rg_resources) * 80 + 40)
+        svg_html += f'<rect x="{x-120}" y="{y_start-20}" width="240" height="{container_height}" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5"/>'
+        
+        # Resource group title (truncated if too long)
+        display_rg_name = truncate_text(rg_name, 30)
+        svg_html += f'<text x="{x}" y="{y_start-5}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976d2">{display_rg_name}</text>'
+        
+        # Resources in this group
+        for j, resource in enumerate(rg_resources):
+            y = y_start + j * 80
+            
+            # Resource icon
+            icon = get_azure_icon(resource['type'])
+            svg_html += f'<circle cx="{x-60}" cy="{y+10}" r="12" fill="#1976d2"/>'
+            svg_html += f'<text x="{x-60}" y="{y+15}" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">{icon}</text>'
+            
+            # Resource name (truncated) with hover tooltip
+            display_name = truncate_text(resource['name'], 25)
+            svg_html += f'<text x="{x-30}" y="{y+8}" font-family="Arial, sans-serif" font-size="10" fill="#333" title="{resource["name"]}">{display_name}</text>'
+            
+            # Resource type (truncated) with hover tooltip
+            resource_type = resource['type'].split('/')[-1]
+            display_type = truncate_text(resource_type, 25)
+            svg_html += f'<text x="{x-30}" y="{y+20}" font-family="Arial, sans-serif" font-size="8" fill="#666" title="{resource_type}">{display_type}</text>'
+            
+            # Add arrow to next resource (if not the last one)
+            if j < len(rg_resources) - 1:
+                arrow_y = y + 35
+                svg_html += f'<line x1="{x-60}" y1="{arrow_y}" x2="{x-60}" y2="{arrow_y + 20}" stroke="#1976d2" stroke-width="2" marker-end="url(#arrowhead)"/>'
+    
+    svg_html += '''
+            </svg>
+        </div>
+    </div>
+    
+    <script>
+        function resizeDiagram() {
+            const container = document.getElementById('{svg_id}-container');
+            const svg = document.getElementById('{svg_id}');
+            if (container && svg) {
+                const containerWidth = container.offsetWidth;
+                const containerHeight = container.offsetHeight;
+                
+                // Update viewBox to fit content
+                const viewBoxWidth = Math.max(1000, containerWidth);
+                const viewBoxHeight = Math.max(500, containerHeight);
+                svg.setAttribute('viewBox', `0 0 ${{viewBoxWidth}} ${{viewBoxHeight}}`);
+            }
+        }
+        
+        // Resize on window resize
+        window.addEventListener('resize', resizeDiagram);
+        
+        // Initial resize
+        setTimeout(resizeDiagram, 100);
+    </script>
+    '''
+    
+    return svg_html
+
+def truncate_text(text, max_length):
+    """Truncate text to max_length and add ellipsis if needed"""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length-3] + "..."
+
+def get_azure_icon(resource_type):
+    """Get a simple icon character for Azure resource type"""
+    type_lower = resource_type.lower()
+    
+    if 'virtualmachine' in type_lower or 'vm' in type_lower:
+        return '🖥'
+    elif 'storage' in type_lower:
+        return '💾'
+    elif 'network' in type_lower or 'vnet' in type_lower:
+        return '🌐'
+    elif 'database' in type_lower or 'sql' in type_lower:
+        return '🗄'
+    elif 'app' in type_lower or 'function' in type_lower:
+        return '⚡'
+    elif 'keyvault' in type_lower:
+        return '🔐'
+    elif 'loadbalancer' in type_lower:
+        return '⚖'
+    elif 'disk' in type_lower:
+        return '💿'
+    elif 'container' in type_lower or 'aks' in type_lower:
+        return '📦'
+    else:
+        return '☁'
 
 def create_azure_resources_html(resources_text):
     """Create HTML representation of Azure resources"""
@@ -95,10 +247,12 @@ def create_azure_resources_html(resources_text):
     columns = [col.strip() for col in header_line.split('  ') if col.strip()]
     
     html = """
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px;">
-            <thead>
-                <tr style="background: #e1e1e1;">
+    <div style="margin-top: 20px;">
+        <h4 style="margin-bottom: 10px; color: #333;">Detailed Resource List</h4>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px;">
+                <thead>
+                    <tr style="background: #e1e1e1;">
     """
     
     # Add header
@@ -122,8 +276,9 @@ def create_azure_resources_html(resources_text):
                 html += '</tr>'
     
     html += """
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
     """
     
