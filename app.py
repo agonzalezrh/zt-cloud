@@ -119,7 +119,7 @@ def create_azure_diagram_svg(resources_text):
     svg_html = f'''
     <div style="margin: 20px 0; text-align: center;">
         <div id="{svg_id}-container" style="width: 100%; height: 500px; border: 1px solid #ddd; background: #fafafa; overflow: auto;">
-            <svg id="{svg_id}" width="100%" height="100%" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+            <svg id="{svg_id}" width="100%" height="100%" viewBox="0 0 1200 600" preserveAspectRatio="none">
                 <defs>
                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                         <polygon points="0 0, 10 3.5, 0 7" fill="#1976d2" />
@@ -140,9 +140,9 @@ def create_azure_diagram_svg(resources_text):
     for i, (rg_name, rg_resources) in enumerate(resource_groups.items()):
         x = 100 + i * x_spacing
         
-        # Resource group container (doubled width)
+        # Resource group container (reduced by 25% from 240px to 180px)
         container_height = max(120, len(rg_resources) * 80 + 40)
-        svg_html += f'<rect x="{x-120}" y="{y_start-20}" width="240" height="{container_height}" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5"/>'
+        svg_html += f'<rect x="{x-90}" y="{y_start-20}" width="180" height="{container_height}" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5"/>'
         
         # Resource group title (truncated if too long)
         display_rg_name = truncate_text(rg_name, 30)
@@ -152,24 +152,24 @@ def create_azure_diagram_svg(resources_text):
         for j, resource in enumerate(rg_resources):
             y = y_start + j * 80
             
-            # Resource icon
+            # Resource icon (adjusted for smaller box)
             icon = get_azure_icon(resource['type'])
-            svg_html += f'<circle cx="{x-60}" cy="{y+10}" r="12" fill="#1976d2"/>'
-            svg_html += f'<text x="{x-60}" y="{y+15}" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">{icon}</text>'
+            svg_html += f'<circle cx="{x-45}" cy="{y+10}" r="12" fill="#1976d2"/>'
+            svg_html += f'<text x="{x-45}" y="{y+15}" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">{icon}</text>'
             
             # Resource name (truncated) with hover tooltip
-            display_name = truncate_text(resource['name'], 25)
-            svg_html += f'<text x="{x-30}" y="{y+8}" font-family="Arial, sans-serif" font-size="10" fill="#333" title="{resource["name"]}">{display_name}</text>'
+            display_name = truncate_text(resource['name'], 20)
+            svg_html += f'<text x="{x-20}" y="{y+8}" font-family="Arial, sans-serif" font-size="10" fill="#333" title="{resource["name"]}">{display_name}</text>'
             
             # Resource type (truncated) with hover tooltip
             resource_type = resource['type'].split('/')[-1]
-            display_type = truncate_text(resource_type, 25)
-            svg_html += f'<text x="{x-30}" y="{y+20}" font-family="Arial, sans-serif" font-size="8" fill="#666" title="{resource_type}">{display_type}</text>'
+            display_type = truncate_text(resource_type, 20)
+            svg_html += f'<text x="{x-20}" y="{y+20}" font-family="Arial, sans-serif" font-size="8" fill="#666" title="{resource_type}">{display_type}</text>'
             
             # Add arrow to next resource (if not the last one)
             if j < len(rg_resources) - 1:
                 arrow_y = y + 35
-                svg_html += f'<line x1="{x-60}" y1="{arrow_y}" x2="{x-60}" y2="{arrow_y + 20}" stroke="#1976d2" stroke-width="2" marker-end="url(#arrowhead)"/>'
+                svg_html += f'<line x1="{x-45}" y1="{arrow_y}" x2="{x-45}" y2="{arrow_y + 20}" stroke="#1976d2" stroke-width="2" marker-end="url(#arrowhead)"/>'
     
     svg_html += '''
             </svg>
@@ -181,13 +181,15 @@ def create_azure_diagram_svg(resources_text):
             const container = document.getElementById('{svg_id}-container');
             const svg = document.getElementById('{svg_id}');
             if (container && svg) {
-                const containerWidth = container.offsetWidth;
-                const containerHeight = container.offsetHeight;
+                // Calculate content dimensions based on number of resource groups
+                const numResourceGroups = {len(resource_groups)};
+                const contentWidth = Math.max(1200, numResourceGroups * 250);
+                const contentHeight = Math.max(600, 500);
                 
-                // Update viewBox to fit content
-                const viewBoxWidth = Math.max(1000, containerWidth);
-                const viewBoxHeight = Math.max(500, containerHeight);
-                svg.setAttribute('viewBox', `0 0 ${{viewBoxWidth}} ${{viewBoxHeight}}`);
+                // Set SVG dimensions to content size for proper scrolling
+                svg.setAttribute('width', contentWidth);
+                svg.setAttribute('height', contentHeight);
+                svg.setAttribute('viewBox', `0 0 ${{contentWidth}} ${{contentHeight}}`);
             }
         }
         
