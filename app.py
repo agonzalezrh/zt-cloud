@@ -118,8 +118,8 @@ def create_azure_diagram_svg(resources_text):
     
     svg_html = f'''
     <div style="margin: 20px 0; text-align: center;">
-        <div id="{svg_id}-container" style="width: 100%; height: 500px; border: 1px solid #ddd; background: #fafafa; overflow: auto;">
-            <svg id="{svg_id}" width="100%" height="100%" viewBox="0 0 1200 600" preserveAspectRatio="none">
+        <div id="{svg_id}-container" style="width: 100%; height: 500px; border: 1px solid #ddd; background: #fafafa; overflow: auto; position: relative;">
+            <svg id="{svg_id}" style="display: block; min-width: 100%; min-height: 100%;" viewBox="0 0 1200 600" preserveAspectRatio="none">
                 <defs>
                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                         <polygon points="0 0, 10 3.5, 0 7" fill="#1976d2" />
@@ -186,9 +186,9 @@ def create_azure_diagram_svg(resources_text):
                 const contentWidth = Math.max(1200, numResourceGroups * 250);
                 const contentHeight = Math.max(600, 500);
                 
-                // Set SVG dimensions to content size for proper scrolling
-                svg.setAttribute('width', contentWidth);
-                svg.setAttribute('height', contentHeight);
+                // Set SVG to actual content size to enable scrolling
+                svg.style.width = contentWidth + 'px';
+                svg.style.height = contentHeight + 'px';
                 svg.setAttribute('viewBox', `0 0 ${{contentWidth}} ${{contentHeight}}`);
             }
         }
